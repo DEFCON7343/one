@@ -341,6 +341,75 @@ string& History::to_xml(string& xml, bool database) const
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
+string& History::to_json(string& json) const
+{
+    ostringstream oss;
+
+    oss << "\"HISTORY\": {" <<
+          "\"OID\": \""      << oid           << "\"," <<
+          "\"SEQ\": \""      << seq           << "\"," <<
+          "\"HOSTNAME\": \"" << hostname      << "\"," <<
+          "\"HID\": \""      << hid           << "\"," <<
+          "\"CID\": \""      << cid           << "\"," <<
+          "\"STIME\": \""    << stime         << "\"," <<
+          "\"ETIME\": \""    << etime         << "\"," <<
+          "\"VM_MAD\": \""   << vmm_mad_name  << "\"," <<
+          "\"TM_MAD\": \""   << tm_mad_name   << "\"," <<
+          "\"DS_ID\": \""    << ds_id         << "\"," <<
+          "\"PSTIME\": \""   << prolog_stime  << "\"," <<
+          "\"PETIME\": \""   << prolog_etime  << "\"," <<
+          "\"RSTIME\": \""   << running_stime << "\"," <<
+          "\"RETIME\": \""   << running_etime << "\"," <<
+          "\"ESTIME\": \""   << epilog_stime  << "\"," <<
+          "\"EETIME\": \""   << epilog_etime  << "\"," <<
+          "\"ACTION\": \""   << action        << "\"," <<
+          "\"UID\": \""      << uid           << "\"," <<
+          "\"GID\": \""      << gid           << "\"," <<
+          "\"REQUEST_ID\": \"" << req_id      << "\",";
+
+    oss << "}";
+
+    json = oss.str();
+
+    return json;
+}
+
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+
+string& History::to_token(string& text) const
+{
+    ostringstream oss;
+
+    oss <<"OID=" << oid << "\n" <<
+          "SEQ=" << seq << "\n" <<
+          "HOSTNAME=" << hostname << "\n" <<
+          "HID=" << hid << "\n" <<
+          "CID=" << cid << "\n" <<
+          "STIME=" << stime << "\n" <<
+          "ETIME=" << etime << "\n" <<
+          "VM_MAD=" << vmm_mad_name << "\n" <<
+          "TM_MAD=" << tm_mad_name << "\n" <<
+          "DS_ID=" << ds_id << "\n" <<
+          "PSTIME=" << prolog_stime << "\n" <<
+          "PETIME=" << prolog_etime << "\n" <<
+          "RSTIME=" << running_stime << "\n" <<
+          "RETIME=" << running_etime << "\n" <<
+          "ESTIME=" << epilog_stime << "\n" <<
+          "EETIME=" << epilog_etime << "\n" <<
+          "ACTION=" << action << "\n" <<
+          "UID=" << uid << "\n" <<
+          "GID=" << gid << "\n" <<
+          "REQUEST_ID=" << req_id << "\n";
+
+    text = oss.str();
+
+    return text;
+}
+
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+
 string& History::to_xml_short(string& xml) const
 {
     ostringstream oss;

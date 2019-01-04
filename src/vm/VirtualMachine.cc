@@ -457,12 +457,14 @@ const char * VirtualMachine::table = "vm_pool";
 
 const char * VirtualMachine::db_names =
     "oid, name, body, uid, gid, last_poll, state, lcm_state, "
-    "owner_u, group_u, other_u, short_body";
+    "owner_u, group_u, other_u, short_body, json_body, search_token";
 
 const char * VirtualMachine::db_bootstrap = "CREATE TABLE IF NOT EXISTS "
-    "vm_pool (oid INTEGER PRIMARY KEY, name VARCHAR(128), body MEDIUMTEXT, uid INTEGER, "
-    "gid INTEGER, last_poll INTEGER, state INTEGER, lcm_state INTEGER, "
-    "owner_u INTEGER, group_u INTEGER, other_u INTEGER, short_body MEDIUMTEXT)";
+    "vm_pool (oid INTEGER PRIMARY KEY, name VARCHAR(128), body MEDIUMTEXT, "
+    "uid INTEGER, gid INTEGER, last_poll INTEGER, state INTEGER, "
+    "lcm_state INTEGER, owner_u INTEGER, group_u INTEGER, other_u INTEGER, "
+    "short_body MEDIUMTEXT, json_body MEDIUMTEXT, search_token MEDIUMTEXT, "
+    "FULLTEXT ftidx(search_token))";
 
 
 const char * VirtualMachine::monit_table = "vm_monitoring";
@@ -1662,10 +1664,13 @@ int VirtualMachine::insert_replace(SqlDB *db, bool replace, string& error_str)
     ostringstream   oss;
     int             rc;
 
-    string xml_body, short_xml_body;
+    string xml_body, short_xml_body, json, text;
+
     char * sql_name;
     char * sql_xml;
     char * sql_short_xml;
+    char * sql_json;
+    char * sql_text;
 
     sql_name =  db->escape_str(name.c_str());
 
@@ -1698,6 +1703,20 @@ int VirtualMachine::insert_replace(SqlDB *db, bool replace, string& error_str)
         goto error_xml_short;
     }
 
+    sql_json = db->escape_str(to_json(json).c_str());
+
+    if ( sql_json == 0 )
+    {
+        goto error_json;
+    }
+
+    sql_text = db->escape_str(to_token(text).c_str());
+
+    if ( sql_text == 0 )
+    {
+        goto error_text;
+    }
+
     if(replace)
     {
         oss << "REPLACE";
@@ -1719,17 +1738,25 @@ int VirtualMachine::insert_replace(SqlDB *db, bool replace, string& error_str)
         <<          owner_u         << ","
         <<          group_u         << ","
         <<          other_u         << ","
-        << "'" <<   sql_short_xml   << "'"
+        << "'" <<   sql_short_xml   << "',"
+        << "'" <<   sql_json        << "',"
+        << "'" <<   sql_text        << "'"
         << ")";
 
     db->free_str(sql_name);
     db->free_str(sql_xml);
     db->free_str(sql_short_xml);
+    db->free_str(sql_json);
+    db->free_str(sql_text);
 
     rc = db->exec_wr(oss);
 
     return rc;
 
+error_text:
+    db->free_str(sql_text);
+error_json:
+    db->free_str(sql_json);
 error_xml_short:
     db->free_str(sql_short_xml);
 error_xml:
@@ -2145,7 +2172,7 @@ string& VirtualMachine::to_xml_extended(string& xml, int n_history) const
     string snap_xml;
     string lock_str;
 
-    ostringstream   oss;
+    ostringstream oss;
 
     oss << "<VM>"
         << "<ID>"        << oid       << "</ID>"
@@ -2210,6 +2237,92 @@ string& VirtualMachine::to_xml_extended(string& xml, int n_history) const
     xml = oss.str();
 
     return xml;
+}
+
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+
+string& VirtualMachine::to_json(string& json) const
+{
+    string template_json;
+    string user_template_json;
+    string history_json;
+
+    ostringstream oss;
+
+    oss << "{\"VM\":{"
+        << "\"ID\": \""<< oid << "\","
+        << "\"UID\": \""<< uid << "\","
+        << "\"GID\": \""<< gid << "\","
+        << "\"UNAME\": \""<< uname << "\","
+        << "\"GNAME\": \""<< gname << "\","
+        << "\"NAME\": \""<< name << "\","
+        << "\"LAST_POLL\": \""<< last_poll << "\","
+        << "\"STATE\": \""<< state << "\","
+        << "\"LCM_STATE\": \""<< lcm_state << "\","
+        << "\"PREV_STATE\": \""<< prev_state << "\","
+        << "\"PREV_LCM_STATE\": \""<< prev_lcm_state << "\","
+        << "\"RESCHED\": \""<< resched << "\","
+        << "\"STIME\": \""<< stime << "\","
+        << "\"ETIME\": \""<< etime << "\","
+        << "\"DEPLOY_ID\": \""<< deploy_id << "\","
+        << obj_template->to_json(template_json) << ","
+        << user_obj_template->to_json(user_template_json);
+
+    if ( hasHistory() )
+    {
+        oss << ",\"HISTORY_RECORDS\": [";
+
+        oss << history->to_json(history_json);
+
+        oss << "]";
+    }
+
+    oss << "}}";
+
+
+    json = oss.str();
+
+    return json;
+}
+
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+
+string& VirtualMachine::to_token(string& text) const
+{
+    string template_text;
+    string user_template_text;
+    string history_text;
+
+    ostringstream oss;
+
+    oss << "ID="<< oid << "\n"
+        << "UID="<< uid << "\n"
+        << "GID="<< gid << "\n"
+        << "UNAME="<< uname << "\n"
+        << "GNAME="<< gname << "\n"
+        << "NAME="<< name << "\n"
+        << "LAST_POLL="<< last_poll << "\n"
+        << "STATE="<< state << "\n"
+        << "LCM_STATE="<< lcm_state << "\n"
+        << "PREV_STATE="<< prev_state << "\n"
+        << "PREV_LCM_STATE="<< prev_lcm_state << "\n"
+        << "RESCHED="<< resched << "\n"
+        << "STIME="<< stime << "\n"
+        << "ETIME="<< etime << "\n"
+        << "DEPLOY_ID="<< deploy_id << "\n"
+        << obj_template->to_token(template_text) << "\n"
+        << user_obj_template->to_token(user_template_text);
+
+    if ( hasHistory() )
+    {
+        oss << "\n" << history->to_json(history_text);
+    }
+
+    text = oss.str();
+
+    return text;
 }
 
 /* -------------------------------------------------------------------------- */

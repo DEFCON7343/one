@@ -133,7 +133,11 @@ void VectorAttribute::to_token(std::ostringstream& s) const
             continue;
         }
 
-        s << it->first << "=" << it->second << std::endl;
+        //s << it->first << "=" << it->second << std::endl;
+        one_util::escape_token(it->first, s);
+        s << "=";
+        one_util::escape_token(it->second, s);
+        s << std::endl;
     }
 }
 

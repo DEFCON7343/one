@@ -416,11 +416,14 @@ void one_util::escape_token(const std::string& str, std::ostringstream& s)
     {
         switch (*it)
         {
-            case '-': break;
-            case '_': break;
-            case '.': break;
-            case ':': break;
-            default : s << *it;
+            case '-':
+            case '_':
+            case '.':
+            case ':':
+                s << '_';
+                break;
+            default :
+                s << *it;
         }
     }
 }

@@ -183,13 +183,11 @@ public:
             return;
         }
 
-        s << attribute_name << "=" << attribute_value << std::endl;
-/*
-        one_util::escape_text(attribute_name, s); 
-        s << " ";
-        one_util::escape_text(attribute_value, s);
+        /* s << attribute_name << "=" << attribute_value << std::endl; */
+        one_util::escape_token(attribute_name, s);
+        s << "=";
+        one_util::escape_token(attribute_value, s);
         s << std::endl;
-*/
     }
 
     /**
